@@ -5,13 +5,18 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/tyrads-com/tyrads-go-sdk-iframe/client"
+	"github.com/tyrads-com/tyrads-go-sdk-iframe/config"
 	"github.com/tyrads-com/tyrads-go-sdk-iframe/contract"
 	"github.com/tyrads-com/tyrads-go-sdk-iframe/enum"
 )
 
+type AuthenticationRequest = contract.AuthenticationRequest
+type AuthenticationSign = contract.AuthenticationSign
+
 type TyrAdsSdk struct {
-	config     *Config
-	httpClient *HttpClient
+	config     *config.Config
+	httpClient *client.HttpClient
 }
 
 // NewTyrAdsSdk creates and returns a new instance of TyrAdsSdk with the specified configuration.
@@ -34,12 +39,12 @@ func NewTyrAdsSdk(apiKey, apiSecret, lang string) *TyrAdsSdk {
 	if lang == "" {
 		lang = "en"
 	}
-	cfg := NewConfig(apiKey, apiSecret, func(c *Config) {
+	cfg := config.NewConfig(apiKey, apiSecret, func(c *config.Config) {
 		c.Language = lang
 	})
 	return &TyrAdsSdk{
 		config:     cfg,
-		httpClient: NewHttpClient(cfg),
+		httpClient: client.NewHttpClient(cfg),
 	}
 }
 
@@ -54,7 +59,7 @@ func NewTyrAdsSdk(apiKey, apiSecret, lang string) *TyrAdsSdk {
 // Returns:
 //   - *AuthenticationSign: Contains the authentication token and user information
 //   - error: Returns an error if validation fails, request fails, or response parsing fails
-func (sdk *TyrAdsSdk) Authenticate(request contract.AuthenticationRequest) (*contract.AuthenticationSign, error) {
+func (sdk *TyrAdsSdk) Authenticate(request AuthenticationRequest) (*AuthenticationSign, error) {
 	if err := request.ValidateAuthenticationRequest(); err != nil {
 		return nil, fmt.Errorf("validation error: %w", err)
 	}
@@ -88,7 +93,7 @@ func (sdk *TyrAdsSdk) Authenticate(request contract.AuthenticationRequest) (*con
 // and an optional deeplinkTo string pointer for specifying a target destination.
 //
 // Parameters:
-//   - authSignOrToken: Either a string token or *contract.AuthenticationSign for authentication
+//   - authSignOrToken: Either a string token or *AuthenticationSign for authentication
 //   - deeplinkTo: Optional pointer to a string specifying the target destination
 //
 // Returns:
@@ -100,7 +105,7 @@ func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string)
 	switch v := authSignOrToken.(type) {
 	case string:
 		token = v
-	case *contract.AuthenticationSign:
+	case *AuthenticationSign:
 		token = v.Token
 	default:
 		return "", fmt.Errorf("invalid argument: must be an AuthenticationSign or a string token")

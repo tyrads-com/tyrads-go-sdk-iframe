@@ -1,4 +1,4 @@
-package tyrads
+package client
 
 import (
 	"bytes"
@@ -6,19 +6,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/tyrads-com/tyrads-go-sdk-iframe/config"
 )
 
 type HttpClient struct {
 	client  *http.Client
 	baseURL string
-	config  *Config
+	config  *config.Config
 }
 
 type HttpError struct {
 	Message string `json:"message"`
 }
 
-func NewHttpClient(cfg *Config) *HttpClient {
+func NewHttpClient(cfg *config.Config) *HttpClient {
 	return &HttpClient{
 		client:  &http.Client{},
 		baseURL: cfg.SdkApiBaseURL,

@@ -1,4 +1,4 @@
-package tyrads
+package config
 
 type Config struct {
 	IFrameBaseURL string
