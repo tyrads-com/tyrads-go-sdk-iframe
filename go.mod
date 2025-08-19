@@ -1,3 +1,3 @@
-module tyrads.com/tyrads-node-sdk-iframe
+module github.com/tyrads-com/tyrads-go-sdk-iframe
 
 go 1.22
