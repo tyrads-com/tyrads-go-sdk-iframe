@@ -65,7 +65,7 @@ func (sdk *TyrAdsSdk) Authenticate(request AuthenticationRequest) (*Authenticati
 	}
 
 	data := request.GetParsedAuthenticationRequestData()
-	resp, err := sdk.httpClient.DoRequest("POST", "/auth/sign", data)
+	resp, err := sdk.httpClient.DoRequest("POST", "/auth", data)
 	if err != nil {
 		return nil, fmt.Errorf("request error: %w", err)
 	}

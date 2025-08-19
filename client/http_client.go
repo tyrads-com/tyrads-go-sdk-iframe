@@ -11,9 +11,8 @@ import (
 )
 
 type HttpClient struct {
-	client  *http.Client
-	baseURL string
-	config  *config.Config
+	client *http.Client
+	config *config.Config
 }
 
 type HttpError struct {
@@ -22,9 +21,8 @@ type HttpError struct {
 
 func NewHttpClient(cfg *config.Config) *HttpClient {
 	return &HttpClient{
-		client:  &http.Client{},
-		baseURL: cfg.SdkApiBaseURL,
-		config:  cfg,
+		client: &http.Client{},
+		config: cfg,
 	}
 }
 
@@ -41,7 +39,7 @@ func NewHttpClient(cfg *config.Config) *HttpClient {
 //   - parsed: The parsed JSON response body (nil if error or result is nil).
 //   - err: Error if the request fails or the response status is not 2xx.
 func (hc *HttpClient) DoRequest(method, path string, body interface{}) (interface{}, error) {
-	url := hc.baseURL + path
+	url := fmt.Sprintf("%s/%s%s", hc.config.SdkApiBaseURL, hc.config.SdkApiVersion, path)
 
 	var reqBody io.Reader
 	if body != nil {
