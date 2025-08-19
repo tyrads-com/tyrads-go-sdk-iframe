@@ -5,8 +5,8 @@ import (
 	"net/url"
 	"os"
 
-	"tyrads.com/tyrads-node-sdk-iframe/contract"
-	"tyrads.com/tyrads-node-sdk-iframe/enum"
+	"github.com/tyrads-com/tyrads-go-sdk-iframe/contract"
+	"github.com/tyrads-com/tyrads-go-sdk-iframe/enum"
 )
 
 type TyrAdsSdk struct {
