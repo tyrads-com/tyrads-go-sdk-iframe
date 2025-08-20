@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'docs/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.22
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-1.22-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-1.22-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Generate changelog and tag
+      id: changelog
+      uses: TriPSs/conventional-changelog-action@v5
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        output-file: "false"
+        skip-version-file: "true"
+        skip-commit: "false"
+        git-message: "chore(release): {version}"
+        tag-prefix: "v"
+        preset: "conventional"
+        release-count: "10"
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      if: steps.changelog.outputs.skipped == 'false'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.changelog.outputs.tag }}
+        release_name: ${{ steps.changelog.outputs.tag }}
+        body: ${{ steps.changelog.outputs.changelog }}
+        draft: false
+        prerelease: false
+
+    - name: Configure Git
+      if: steps.changelog.outputs.skipped == 'false'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Update go.mod version
+      if: steps.changelog.outputs.skipped == 'false'
+      run: |
+        # Extract version number without 'v' prefix for go.mod
+        VERSION=$(echo "${{ steps.changelog.outputs.version }}" | sed 's/^v//')
+        echo "Updating go.mod with version: $VERSION"
+        
+        # Update go.mod if it doesn't already have the version
+        if ! grep -q "// v$VERSION" go.mod; then
+          echo "" >> go.mod
+          echo "// v$VERSION" >> go.mod
+          git add go.mod
+          git commit -m "chore: update go.mod version to v$VERSION" || echo "No changes to commit"
+        fi
+
+  publish-coverage:
+    name: Publish Coverage
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 1.22
+
+    - name: Run tests with coverage
+      run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-main
+        fail_ci_if_error: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Generate coverage badge
+      uses: vladopajic/go-test-coverage@v2
+      with:
+        profile: coverage.out
+        local-prefix: github.com/tyrads-com/tyrads-go-sdk-iframe
+        threshold-file: 80
+        threshold-package: 80
+        threshold-total: 80
