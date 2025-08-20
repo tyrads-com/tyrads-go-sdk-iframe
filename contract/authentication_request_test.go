@@ -8,7 +8,7 @@ import (
 func TestNewAuthenticationRequest(t *testing.T) {
 	email := "test@example.com"
 	phone := "+1234567890"
-	
+
 	tests := []struct {
 		name            string
 		publisherUserID string
@@ -63,7 +63,7 @@ func TestValidateAuthenticationRequest(t *testing.T) {
 	invalidEmail := "invalid-email"
 	validPhone := "+1234567890"
 	invalidPhone := "invalid-phone"
-	
+
 	tests := []struct {
 		name    string
 		request *AuthenticationRequest

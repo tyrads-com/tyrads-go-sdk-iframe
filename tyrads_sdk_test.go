@@ -78,12 +78,12 @@ func TestIframeUrl(t *testing.T) {
 	sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
 
 	tests := []struct {
-		name               string
-		authSignOrToken    interface{}
-		deeplinkTo         *string
-		expectedURL        string
-		expectError        bool
-		expectedErrorMsg   string
+		name             string
+		authSignOrToken  interface{}
+		deeplinkTo       *string
+		expectedURL      string
+		expectError      bool
+		expectedErrorMsg string
 	}{
 		{
 			name:            "with string token",
