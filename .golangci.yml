@@ -1,5 +1,3 @@
-version: "2"
-
 run:
   timeout: 5m
   issues-exit-code: 1
@@ -17,16 +15,8 @@ linters-settings:
     locale: US
   lll:
     line-length: 120
-  gocritic:
-    enabled-tags:
-      - performance
-      - style
-      - experimental
-    disabled-checks:
-      - wrapperFunc
 
 linters:
-  disable-all: true
   enable:
     - errcheck
     - govet
@@ -37,19 +27,9 @@ linters:
     - misspell
     - lll
     - goconst
-    - gocritic
     - revive
     - gosec
 
 issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gosec
-        - lll
-  exclude:
-    # Exclude known linter issues
-    - 'Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked'
   max-issues-per-linter: 0
   max-same-issues: 0
