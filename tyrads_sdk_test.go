@@ -124,6 +124,7 @@ func TestIframeUrl(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error, got nil")
 				}
+
 				if err.Error() != tt.expectedErrorMsg {
 					t.Errorf("expected error '%s', got '%s'", tt.expectedErrorMsg, err.Error())
 				}
