@@ -1,0 +1,71 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.22'
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
+    - name: Download dependencies
+      run: go mod download
+    
+    - name: Install golangci-lint
+      run: make install-lint
+    
+    - name: Run CI checks (format, vet, lint, test)
+      run: make ci
+    
+    - name: Run tests with coverage
+      run: make test-coverage
+    
+    - name: Display coverage report
+      run: |
+        echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "Coverage by package:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        go test -v -coverprofile=coverage.out ./... | grep "coverage:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        
+        # Calculate total coverage
+        TOTAL_COVERAGE=$(go tool cover -func=coverage.out | tail -n 1 | awk '{print $3}')
+        echo "**Total Coverage: $TOTAL_COVERAGE**" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Check coverage threshold
+      run: |
+        TOTAL_COVERAGE=$(go tool cover -func=coverage.out | tail -n 1 | awk '{print $3}' | sed 's/%//')
+        echo "Total coverage: $TOTAL_COVERAGE%"
+        if (( $(echo "$TOTAL_COVERAGE < 70" | bc -l) )); then
+          echo "Coverage $TOTAL_COVERAGE% is below the minimum threshold of 70%"
+          exit 1
+        else
+          echo "Coverage $TOTAL_COVERAGE% meets the minimum threshold of 70%"
+        fi
+    
+    - name: Upload coverage to GitHub
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: |
+          coverage.out
+          coverage.html
+        retention-days: 30
