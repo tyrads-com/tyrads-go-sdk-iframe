@@ -150,9 +150,9 @@ func TestAuthenticate(t *testing.T) {
 	t.Run("validation error", func(t *testing.T) {
 		sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
 		request := contract.NewAuthenticationRequest("", 25, 1)
-		
+
 		result, err := sdk.Authenticate(*request)
-		
+
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
