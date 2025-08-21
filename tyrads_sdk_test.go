@@ -2,6 +2,7 @@ package tyrads
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/tyrads-com/tyrads-go-sdk-iframe/contract"
@@ -144,4 +145,90 @@ func TestIframeUrl(t *testing.T) {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func TestAuthenticate(t *testing.T) {
+	t.Run("validation error", func(t *testing.T) {
+		sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
+		request := contract.NewAuthenticationRequest("", 25, 1)
+
+		result, err := sdk.Authenticate(*request)
+
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "validation error") {
+			t.Errorf("expected error to contain 'validation error', got '%s'", err.Error())
+		}
+		if result != nil {
+			t.Error("expected nil result when error occurs")
+		}
+	})
+}
+
+func TestIframePremiumWidget(t *testing.T) {
+	sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
+
+	tests := []struct {
+		name             string
+		authSignOrToken  interface{}
+		name_param       *string
+		expectedURL      string
+		expectError      bool
+		expectedErrorMsg string
+	}{
+		{
+			name:            "with string token",
+			authSignOrToken: "test-token",
+			expectedURL:     "https://sdk.tyrads.com/widget?token=test-token",
+		},
+		{
+			name:            "with AuthenticationSign",
+			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123", 25, 1),
+			expectedURL:     "https://sdk.tyrads.com/widget?token=auth-token",
+		},
+		{
+			name:            "with name parameter",
+			authSignOrToken: "test-token",
+			name_param:      stringPtr("premium-offers"),
+			expectedURL:     "https://sdk.tyrads.com/widget?token=test-token&name=premium-offers",
+		},
+		{
+			name:             "with empty name",
+			authSignOrToken:  "test-token",
+			name_param:       stringPtr(""),
+			expectError:      true,
+			expectedErrorMsg: "invalid name argument: must be a non-empty string or nil",
+		},
+		{
+			name:             "with invalid auth type",
+			authSignOrToken:  123,
+			expectError:      true,
+			expectedErrorMsg: "invalid argument: must be an AuthenticationSign or a string token",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url, err := sdk.IframePremiumWidget(tt.authSignOrToken, tt.name_param)
+
+			if tt.expectError {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if err.Error() != tt.expectedErrorMsg {
+					t.Errorf("expected error '%s', got '%s'", tt.expectedErrorMsg, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if url != tt.expectedURL {
+				t.Errorf("expected URL '%s', got '%s'", tt.expectedURL, url)
+			}
+		})
+	}
 }
