@@ -93,7 +93,7 @@ func TestIframeUrl(t *testing.T) {
 		},
 		{
 			name:            "with AuthenticationSign",
-			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123", 25, 1),
+			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123"),
 			expectedURL:     "https://sdk.tyrads.com?token=auth-token",
 		},
 		{
@@ -150,7 +150,7 @@ func stringPtr(s string) *string {
 func TestAuthenticate(t *testing.T) {
 	t.Run("validation error", func(t *testing.T) {
 		sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
-		request := contract.NewAuthenticationRequest("", 25, 1)
+		request := contract.NewAuthenticationRequest("")
 
 		result, err := sdk.Authenticate(*request)
 
@@ -184,7 +184,7 @@ func TestIframePremiumWidget(t *testing.T) {
 		},
 		{
 			name:            "with AuthenticationSign",
-			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123", 25, 1),
+			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123"),
 			expectedURL:     "https://sdk.tyrads.com/widget?token=auth-token",
 		},
 		{

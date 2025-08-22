@@ -85,7 +85,7 @@ func (sdk *TyrAdsSdk) Authenticate(request AuthenticationRequest) (*Authenticati
 		return nil, fmt.Errorf("invalid token format")
 	}
 
-	return contract.NewAuthenticationSign(token, request.PublisherUserID, request.Age, request.Gender), nil
+	return contract.NewAuthenticationSign(token, request.PublisherUserID), nil
 }
 
 // IframeUrl generates a URL for an iframe integration with authentication.

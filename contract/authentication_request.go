@@ -9,8 +9,8 @@ import (
 // AuthenticationRequest represents a request for user authentication.
 type AuthenticationRequest struct {
 	PublisherUserID   string  `json:"publisherUserId"`
-	Age               int     `json:"age"`
-	Gender            int     `json:"gender"`
+	Age               *int    `json:"age,omitempty"`
+	Gender            *int    `json:"gender,omitempty"`
 	Email             *string `json:"email,omitempty"`
 	PhoneNumber       *string `json:"phoneNumber,omitempty"`
 	Sub1              *string `json:"sub1,omitempty"`
@@ -33,11 +33,9 @@ type AuthenticationRequest struct {
 type AuthenticationRequestOptions func(*AuthenticationRequest)
 
 // NewAuthenticationRequest creates a new AuthenticationRequest instance.
-func NewAuthenticationRequest(publisherUserID string, age, gender int, opts ...AuthenticationRequestOptions) *AuthenticationRequest {
+func NewAuthenticationRequest(publisherUserID string, opts ...AuthenticationRequestOptions) *AuthenticationRequest {
 	req := &AuthenticationRequest{
 		PublisherUserID: publisherUserID,
-		Age:             age,
-		Gender:          gender,
 	}
 
 	for _, opt := range opts {
@@ -53,10 +51,10 @@ func (ar *AuthenticationRequest) ValidateAuthenticationRequest() error {
 	if ar.PublisherUserID == "" {
 		return errors.New("publisher user ID cannot be empty and must be a string")
 	}
-	if ar.Age < 0 {
+	if ar.Age != nil && *ar.Age < 0 {
 		return errors.New("age must be a non-negative integer")
 	}
-	if ar.Gender != 1 && ar.Gender != 2 {
+	if ar.Gender != nil && (*ar.Gender != 1 && *ar.Gender != 2) {
 		return errors.New("gender must be either 1 (male) or 2 (female)")
 	}
 	if ar.Email != nil {
@@ -102,11 +100,11 @@ func (ar *AuthenticationRequest) ValidateAuthenticationRequest() error {
 // Only includes fields that are defined and non-empty.
 func (ar *AuthenticationRequest) GetParsedAuthenticationRequestData() map[string]interface{} {
 	data := map[string]interface{}{
-		"age":             ar.Age,
-		"gender":          ar.Gender,
 		"publisherUserId": ar.PublisherUserID,
 	}
 	optionalFields := map[string]interface{}{
+		"age":               ar.Age,
+		"gender":            ar.Gender,
 		"email":             ar.Email,
 		"phoneNumber":       ar.PhoneNumber,
 		"sub1":              ar.Sub1,
@@ -132,6 +130,10 @@ func (ar *AuthenticationRequest) GetParsedAuthenticationRequestData() map[string
 				data[key] = *v
 			}
 		case *bool:
+			if v != nil {
+				data[key] = *v
+			}
+		case *int:
 			if v != nil {
 				data[key] = *v
 			}
