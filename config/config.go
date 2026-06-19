@@ -16,7 +16,7 @@ func NewConfig(apiKey, apiSecret string, opts ...ConfigOptions) *Config {
 	c := new(Config)
 	c.IFrameBaseURL = "https://sdk.tyrads.com"
 	c.SdkApiBaseURL = "https://api.tyrads.com"
-	c.SdkApiVersion = "v3.0"
+	c.SdkApiVersion = "v4.0"
 	c.SdkPlatform = "Web"
 	c.ApiKey = apiKey
 	c.ApiSecret = apiSecret

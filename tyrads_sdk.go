@@ -26,10 +26,11 @@ type TyrAdsSdk struct {
 //   - apiKey: The API key for authentication. If empty, it will be retrieved from the TYRADS_API_KEY environment variable.
 //   - apiSecret: The API secret for authentication. If empty, it will be retrieved from the TYRADS_API_SECRET environment variable.
 //   - lang: The language code for SDK responses. Defaults to "en" if not specified or empty.
+//   - opts: Optional SdkOption values, e.g. WithApiVersion("v3.0"). If omitted, the SDK uses the latest API version.
 //
 // Returns:
 //   - *TyrAdsSdk: A pointer to the newly created TyrAdsSdk instance configured with the provided parameters.
-func NewTyrAdsSdk(apiKey, apiSecret, lang string) *TyrAdsSdk {
+func NewTyrAdsSdk(apiKey, apiSecret, lang string, opts ...SdkOption) *TyrAdsSdk {
 	if apiKey == "" {
 		apiKey = os.Getenv(string(enum.TYRADS_API_KEY))
 	}
@@ -42,6 +43,9 @@ func NewTyrAdsSdk(apiKey, apiSecret, lang string) *TyrAdsSdk {
 	cfg := config.NewConfig(apiKey, apiSecret, func(c *config.Config) {
 		c.Language = lang
 	})
+	for _, opt := range opts {
+		opt(cfg)
+	}
 	return &TyrAdsSdk{
 		config:     cfg,
 		httpClient: client.NewHttpClient(cfg),
@@ -65,7 +69,11 @@ func (sdk *TyrAdsSdk) Authenticate(request AuthenticationRequest) (*Authenticati
 	}
 
 	data := request.GetParsedAuthenticationRequestData()
-	resp, err := sdk.httpClient.DoRequest("POST", "/auth", data)
+	path := "/initialize/auth"
+	if sdk.config.SdkApiVersion == "v3.0" {
+		path = "/auth"
+	}
+	resp, err := sdk.httpClient.DoRequest("POST", path, data)
 	if err != nil {
 		return nil, fmt.Errorf("request error: %w", err)
 	}

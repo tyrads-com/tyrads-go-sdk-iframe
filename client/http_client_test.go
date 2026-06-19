@@ -45,8 +45,8 @@ func TestDoRequest_Success(t *testing.T) {
 		if r.Header.Get("X-API-Secret") != "test-secret" {
 			t.Errorf("expected X-API-Secret test-secret, got %s", r.Header.Get("X-API-Secret"))
 		}
-		if r.Header.Get("X-SDK-Version") != "v3.0" {
-			t.Errorf("expected X-SDK-Version v3.0, got %s", r.Header.Get("X-SDK-Version"))
+		if r.Header.Get("X-SDK-Version") != "v4.0" {
+			t.Errorf("expected X-SDK-Version v4.0, got %s", r.Header.Get("X-SDK-Version"))
 		}
 		if r.Header.Get("X-SDK-Platform") != "Web" {
 			t.Errorf("expected X-SDK-Platform Web, got %s", r.Header.Get("X-SDK-Platform"))
@@ -85,6 +85,27 @@ func TestDoRequest_Success(t *testing.T) {
 
 	if !resultMap["success"].(bool) {
 		t.Error("expected success to be true")
+	}
+}
+
+func TestDoRequest_OverriddenApiVersionHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-SDK-Version") != "v3.0" {
+			t.Errorf("expected X-SDK-Version v3.0, got %s", r.Header.Get("X-SDK-Version"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	cfg := config.NewConfig("test-key", "test-secret", func(c *config.Config) {
+		c.SdkApiBaseURL = server.URL
+		c.SdkApiVersion = "v3.0"
+	})
+	client := NewHttpClient(cfg)
+
+	if _, err := client.DoRequest("GET", "/anything", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

@@ -1,6 +1,10 @@
 package tyrads
 
 import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -146,6 +150,20 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+func TestNewTyrAdsSdk_DefaultsToLatestApiVersion(t *testing.T) {
+	sdk := NewTyrAdsSdk("k", "s", "en")
+	if sdk.config.SdkApiVersion != "v4.0" {
+		t.Errorf("expected default SdkApiVersion v4.0, got %s", sdk.config.SdkApiVersion)
+	}
+}
+
+func TestNewTyrAdsSdk_WithApiVersionOverride(t *testing.T) {
+	sdk := NewTyrAdsSdk("k", "s", "en", WithApiVersion("v3.0"))
+	if sdk.config.SdkApiVersion != "v3.0" {
+		t.Errorf("expected overridden SdkApiVersion v3.0, got %s", sdk.config.SdkApiVersion)
+	}
+}
+
 func TestAuthenticate(t *testing.T) {
 	t.Run("validation error", func(t *testing.T) {
 		sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
@@ -161,6 +179,69 @@ func TestAuthenticate(t *testing.T) {
 		}
 		if result != nil {
 			t.Error("expected nil result when error occurs")
+		}
+	})
+
+	t.Run("v4.0 hits /initialize/auth and returns token", func(t *testing.T) {
+		var gotPath string
+		var gotBody map[string]any
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotPath = r.URL.Path
+			b, _ := io.ReadAll(r.Body)
+			_ = json.Unmarshal(b, &gotBody)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]any{
+				"data": map[string]any{"token": "tok-v4"},
+			})
+		}))
+		defer server.Close()
+
+		sdk := NewTyrAdsSdk("k", "s", "en")
+		sdk.config.SdkApiBaseURL = server.URL
+
+		req := contract.NewAuthenticationRequest("u-v4",
+			contract.WithSub1("s1"),
+			contract.WithUserGroup(map[string]any{"tier": "vip"}),
+		)
+		sign, err := sdk.Authenticate(*req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if sign == nil || sign.Token != "tok-v4" {
+			t.Fatalf("expected token 'tok-v4', got %+v", sign)
+		}
+		if gotPath != "/v4.0/initialize/auth" {
+			t.Errorf("expected request path '/v4.0/initialize/auth', got %q", gotPath)
+		}
+		if gotBody["userGroup"] != `{"tier":"vip"}` {
+			t.Errorf("expected userGroup to arrive as JSON-encoded string, got %v", gotBody["userGroup"])
+		}
+	})
+
+	t.Run("v3.0 override hits /auth", func(t *testing.T) {
+		var gotPath string
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotPath = r.URL.Path
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]any{
+				"data": map[string]any{"token": "tok-v3"},
+			})
+		}))
+		defer server.Close()
+
+		sdk := NewTyrAdsSdk("k", "s", "en", WithApiVersion("v3.0"))
+		sdk.config.SdkApiBaseURL = server.URL
+
+		req := contract.NewAuthenticationRequest("u-v3")
+		sign, err := sdk.Authenticate(*req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if sign == nil || sign.Token != "tok-v3" {
+			t.Fatalf("expected token 'tok-v3', got %+v", sign)
+		}
+		if gotPath != "/v3.0/auth" {
+			t.Errorf("expected request path '/v3.0/auth', got %q", gotPath)
 		}
 	})
 }

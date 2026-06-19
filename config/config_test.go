@@ -17,7 +17,7 @@ func TestNewConfig(t *testing.T) {
 			expected: &Config{
 				IFrameBaseURL: "https://sdk.tyrads.com",
 				SdkApiBaseURL: "https://api.tyrads.com",
-				SdkApiVersion: "v3.0",
+				SdkApiVersion: "v4.0",
 				SdkPlatform:   "Web",
 				ApiKey:        "test-key",
 				ApiSecret:     "test-secret",
@@ -34,7 +34,7 @@ func TestNewConfig(t *testing.T) {
 			expected: &Config{
 				IFrameBaseURL: "https://sdk.tyrads.com",
 				SdkApiBaseURL: "https://api.tyrads.com",
-				SdkApiVersion: "v3.0",
+				SdkApiVersion: "v4.0",
 				SdkPlatform:   "Web",
 				ApiKey:        "test-key",
 				ApiSecret:     "test-secret",
@@ -50,6 +50,23 @@ func TestNewConfig(t *testing.T) {
 			},
 			expected: &Config{
 				IFrameBaseURL: "https://custom.domain.com",
+				SdkApiBaseURL: "https://api.tyrads.com",
+				SdkApiVersion: "v4.0",
+				SdkPlatform:   "Web",
+				ApiKey:        "test-key",
+				ApiSecret:     "test-secret",
+				Language:      "en",
+			},
+		},
+		{
+			name:      "with overridden api version",
+			apiKey:    "test-key",
+			apiSecret: "test-secret",
+			opts: []ConfigOptions{
+				func(c *Config) { c.SdkApiVersion = "v3.0" },
+			},
+			expected: &Config{
+				IFrameBaseURL: "https://sdk.tyrads.com",
 				SdkApiBaseURL: "https://api.tyrads.com",
 				SdkApiVersion: "v3.0",
 				SdkPlatform:   "Web",
