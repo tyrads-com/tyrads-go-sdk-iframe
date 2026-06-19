@@ -1,0 +1,92 @@
+name: Coverage Comment
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  coverage:
+    name: Post coverage comment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-1.25-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-1.25-
+
+      - name: Run tests with coverage
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Generate HTML coverage report
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
+          retention-days: 14
+
+      - name: Compute coverage stats
+        id: cov
+        run: |
+          set -euo pipefail
+          THRESHOLD=80
+          TOTAL=$(go tool cover -func=coverage.out | tail -n1 | awk '{print $3}' | sed 's/%//')
+          PASS_BADGE='✅ PASS'
+          FAIL_BADGE='❌ FAIL'
+          if (( $(echo "${TOTAL} >= ${THRESHOLD}" | bc -l) )); then
+            STATUS="$PASS_BADGE"
+            VERDICT='passed'
+          else
+            STATUS="$FAIL_BADGE"
+            VERDICT='failed'
+          fi
+          {
+            echo "total=${TOTAL}"
+            echo "threshold=${THRESHOLD}"
+            echo "status=${STATUS}"
+            echo "verdict=${VERDICT}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post / update PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: code-coverage-report
+          message: |
+            ## 📊 Code Coverage Report
+
+            | Metric | Percentage | Status |
+            |---|---|---|
+            | Statements | ${{ steps.cov.outputs.total }}% | ${{ steps.cov.outputs.status }} |
+
+            **Minimum required coverage:** ${{ steps.cov.outputs.threshold }}%
+
+            📈 [View detailed coverage report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            > Go's coverage tool reports statement-level coverage only — branch / function / line metrics aren't tracked by the toolchain.
+
+      - name: Enforce coverage gate
+        if: steps.cov.outputs.verdict == 'failed'
+        run: |
+          echo "Coverage ${{ steps.cov.outputs.total }}% is below the ${{ steps.cov.outputs.threshold }}% threshold"
+          exit 1
