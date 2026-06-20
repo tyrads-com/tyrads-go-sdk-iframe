@@ -93,18 +93,18 @@ func TestIframeUrl(t *testing.T) {
 		{
 			name:            "with string token",
 			authSignOrToken: "test-token",
-			expectedURL:     "https://sdk.tyrads.com?token=test-token",
+			expectedURL:     "https://v4.sdk.tyrads.com?token=test-token",
 		},
 		{
 			name:            "with AuthenticationSign",
 			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123"),
-			expectedURL:     "https://sdk.tyrads.com?token=auth-token",
+			expectedURL:     "https://v4.sdk.tyrads.com?token=auth-token",
 		},
 		{
 			name:            "with deeplink",
 			authSignOrToken: "test-token",
 			deeplinkTo:      stringPtr("offers"),
-			expectedURL:     "https://sdk.tyrads.com?token=test-token&to=offers",
+			expectedURL:     "https://v4.sdk.tyrads.com?token=test-token&to=offers",
 		},
 		{
 			name:             "with empty deeplink",
@@ -247,6 +247,53 @@ func TestAuthenticate(t *testing.T) {
 	})
 }
 
+func TestIframeUrl_VersionAwareHost(t *testing.T) {
+	t.Run("v3 override uses legacy sdk.tyrads.com host", func(t *testing.T) {
+		sdk := NewTyrAdsSdk("k", "s", "en", WithApiVersion("v3.0"))
+
+		got, err := sdk.IframeUrl("tok", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := "https://sdk.tyrads.com?token=tok"
+		if got != want {
+			t.Errorf("expected %s, got %s", want, got)
+		}
+
+		gotWidget, err := sdk.IframePremiumWidget("tok", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		wantWidget := "https://sdk.tyrads.com/widget?token=tok"
+		if gotWidget != wantWidget {
+			t.Errorf("expected %s, got %s", wantWidget, gotWidget)
+		}
+	})
+
+	t.Run("explicit IFrameBaseURL override wins over version derivation", func(t *testing.T) {
+		sdk := NewTyrAdsSdk("k", "s", "en")
+		sdk.config.IFrameBaseURL = "https://staging.example.com"
+
+		got, err := sdk.IframeUrl("tok", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := "https://staging.example.com?token=tok"
+		if got != want {
+			t.Errorf("expected %s, got %s", want, got)
+		}
+
+		gotWidget, err := sdk.IframePremiumWidget("tok", nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		wantWidget := "https://staging.example.com/widget?token=tok"
+		if gotWidget != wantWidget {
+			t.Errorf("expected %s, got %s", wantWidget, gotWidget)
+		}
+	})
+}
+
 func TestIframePremiumWidget(t *testing.T) {
 	sdk := NewTyrAdsSdk("test-key", "test-secret", "en")
 
@@ -261,18 +308,18 @@ func TestIframePremiumWidget(t *testing.T) {
 		{
 			name:            "with string token",
 			authSignOrToken: "test-token",
-			expectedURL:     "https://sdk.tyrads.com/widget?token=test-token",
+			expectedURL:     "https://v4.sdk.tyrads.com/widget?token=test-token",
 		},
 		{
 			name:            "with AuthenticationSign",
 			authSignOrToken: contract.NewAuthenticationSign("auth-token", "user123"),
-			expectedURL:     "https://sdk.tyrads.com/widget?token=auth-token",
+			expectedURL:     "https://v4.sdk.tyrads.com/widget?token=auth-token",
 		},
 		{
 			name:            "with name parameter",
 			authSignOrToken: "test-token",
 			name_param:      stringPtr("premium-offers"),
-			expectedURL:     "https://sdk.tyrads.com/widget?token=test-token&name=premium-offers",
+			expectedURL:     "https://v4.sdk.tyrads.com/widget?token=test-token&name=premium-offers",
 		},
 		{
 			name:             "with empty name",

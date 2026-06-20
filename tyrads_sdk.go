@@ -123,7 +123,7 @@ func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string)
 		return "", fmt.Errorf("invalid deeplinkTo argument: must be a non-empty string or nil")
 	}
 
-	iframeUrl := fmt.Sprintf("%s?token=%s", sdk.config.IFrameBaseURL, url.QueryEscape(token))
+	iframeUrl := fmt.Sprintf("%s?token=%s", sdk.config.ResolveIFrameBaseURL(), url.QueryEscape(token))
 	if deeplinkTo != nil {
 		iframeUrl += fmt.Sprintf("&to=%s", url.QueryEscape(*deeplinkTo))
 	}
@@ -162,7 +162,7 @@ func (sdk *TyrAdsSdk) IframePremiumWidget(authSignOrToken interface{}, name *str
 		return "", fmt.Errorf("invalid name argument: must be a non-empty string or nil")
 	}
 
-	iframeUrl := fmt.Sprintf("%s/widget?token=%s", sdk.config.IFrameBaseURL, url.QueryEscape(token))
+	iframeUrl := fmt.Sprintf("%s/widget?token=%s", sdk.config.ResolveIFrameBaseURL(), url.QueryEscape(token))
 	if name != nil {
 		iframeUrl += fmt.Sprintf("&name=%s", url.QueryEscape(*name))
 	}

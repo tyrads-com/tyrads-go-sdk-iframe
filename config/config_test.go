@@ -15,7 +15,7 @@ func TestNewConfig(t *testing.T) {
 			apiKey:    "test-key",
 			apiSecret: "test-secret",
 			expected: &Config{
-				IFrameBaseURL: "https://sdk.tyrads.com",
+				IFrameBaseURL: "",
 				SdkApiBaseURL: "https://api.tyrads.com",
 				SdkApiVersion: "v4.0",
 				SdkPlatform:   "Web",
@@ -32,7 +32,7 @@ func TestNewConfig(t *testing.T) {
 				func(c *Config) { c.Language = "es" },
 			},
 			expected: &Config{
-				IFrameBaseURL: "https://sdk.tyrads.com",
+				IFrameBaseURL: "",
 				SdkApiBaseURL: "https://api.tyrads.com",
 				SdkApiVersion: "v4.0",
 				SdkPlatform:   "Web",
@@ -66,7 +66,7 @@ func TestNewConfig(t *testing.T) {
 				func(c *Config) { c.SdkApiVersion = "v3.0" },
 			},
 			expected: &Config{
-				IFrameBaseURL: "https://sdk.tyrads.com",
+				IFrameBaseURL: "",
 				SdkApiBaseURL: "https://api.tyrads.com",
 				SdkApiVersion: "v3.0",
 				SdkPlatform:   "Web",
@@ -101,6 +101,49 @@ func TestNewConfig(t *testing.T) {
 			}
 			if config.Language != tt.expected.Language {
 				t.Errorf("expected Language %s, got %s", tt.expected.Language, config.Language)
+			}
+		})
+	}
+}
+
+func TestResolveIFrameBaseURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *Config
+		expected string
+	}{
+		{
+			name:     "default v4 resolves to versioned subdomain",
+			config:   &Config{SdkApiVersion: "v4.0"},
+			expected: "https://v4.sdk.tyrads.com",
+		},
+		{
+			name:     "v3 resolves to legacy host",
+			config:   &Config{SdkApiVersion: "v3.0"},
+			expected: "https://sdk.tyrads.com",
+		},
+		{
+			name:     "future v5 resolves to versioned subdomain",
+			config:   &Config{SdkApiVersion: "v5.0"},
+			expected: "https://v5.sdk.tyrads.com",
+		},
+		{
+			name:     "explicit override wins over version derivation",
+			config:   &Config{SdkApiVersion: "v4.0", IFrameBaseURL: "https://custom.domain.com"},
+			expected: "https://custom.domain.com",
+		},
+		{
+			name:     "empty version falls back to v4 host",
+			config:   &Config{SdkApiVersion: ""},
+			expected: "https://v4.sdk.tyrads.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.ResolveIFrameBaseURL()
+			if got != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, got)
 			}
 		})
 	}
