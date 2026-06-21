@@ -106,6 +106,36 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
+func TestIsV4OrAbove(t *testing.T) {
+	cases := []struct {
+		version string
+		want    bool
+	}{
+		{"v1.0", false},
+		{"v2.0", false},
+		{"v3.0", false},
+		{"v3.9", false},
+		{"v4.0", true},
+		{"v4.2", true},
+		{"v5.0", true},
+		{"v10.0", true},
+		{"V4.0", true},
+		{"V3.0", false},
+		{"4.0", true},
+		{"3.0", false},
+		{"", true},
+		{"latest", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.version, func(t *testing.T) {
+			got := IsV4OrAbove(tc.version)
+			if got != tc.want {
+				t.Errorf("IsV4OrAbove(%q) = %v, want %v", tc.version, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestResolveIFrameBaseURL(t *testing.T) {
 	tests := []struct {
 		name     string

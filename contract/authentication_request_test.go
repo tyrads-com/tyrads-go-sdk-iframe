@@ -501,6 +501,71 @@ func TestGetParsedAuthenticationRequestData_UserGroupStruct(t *testing.T) {
 	}
 }
 
+func TestValidateAuthenticationRequest_EngagementID(t *testing.T) {
+	pos := 12345
+	zero := 0
+	neg := -1
+
+	cases := []struct {
+		name    string
+		value   *int
+		wantErr bool
+	}{
+		{"nil engagementId passes", nil, false},
+		{"positive engagementId passes", &pos, false},
+		{"zero engagementId fails", &zero, true},
+		{"negative engagementId fails", &neg, true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := &AuthenticationRequest{PublisherUserID: "u", EngagementID: tc.value}
+			err := req.ValidateAuthenticationRequest()
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if err.Error() != "engagementId must be a positive integer" {
+					t.Errorf("expected engagementId error, got %q", err.Error())
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestWithEngagementID_SetsField(t *testing.T) {
+	req := NewAuthenticationRequest("u", WithEngagementID(987654))
+	if req.EngagementID == nil || *req.EngagementID != 987654 {
+		t.Fatalf("expected EngagementID=987654, got %v", req.EngagementID)
+	}
+}
+
+func TestGetParsedAuthenticationRequestData_IncludesEngagementID(t *testing.T) {
+	req := NewAuthenticationRequest("u", WithEngagementID(42))
+	data := req.GetParsedAuthenticationRequestData()
+
+	got, ok := data["engagementId"]
+	if !ok {
+		t.Fatal("expected engagementId key in parsed data")
+	}
+	if got != 42 {
+		t.Errorf("expected engagementId=42, got %v", got)
+	}
+}
+
+func TestGetParsedAuthenticationRequestData_OmitsEngagementIDWhenNil(t *testing.T) {
+	req := NewAuthenticationRequest("u")
+	data := req.GetParsedAuthenticationRequestData()
+
+	if _, ok := data["engagementId"]; ok {
+		t.Error("expected engagementId to be omitted when nil")
+	}
+}
+
 func TestGetParsedAuthenticationRequestData_SkipsNilAndEmptyFields(t *testing.T) {
 	emptyString := ""
 	sub1 := "sub1-value"

@@ -96,6 +96,20 @@ func (sdk *TyrAdsSdk) Authenticate(request AuthenticationRequest) (*Authenticati
 	return contract.NewAuthenticationSign(token, request.PublisherUserID), nil
 }
 
+// IframeOption configures optional iframe URL parameters such as placementId.
+type IframeOption func(*iframeOptions)
+
+type iframeOptions struct {
+	placementID *int
+}
+
+// WithPlacementID attaches a placementId query parameter to the generated iframe URL.
+// Only supported on iframe v4 and above; passing it to a v3-configured SDK returns an error.
+// The value must be a positive integer.
+func WithPlacementID(v int) IframeOption {
+	return func(o *iframeOptions) { o.placementID = &v }
+}
+
 // IframeUrl generates a URL for an iframe integration with authentication.
 // It accepts either a string token or an AuthenticationSign struct pointer as the first parameter,
 // and an optional deeplinkTo string pointer for specifying a target destination.
@@ -103,11 +117,12 @@ func (sdk *TyrAdsSdk) Authenticate(request AuthenticationRequest) (*Authenticati
 // Parameters:
 //   - authSignOrToken: Either a string token or *AuthenticationSign for authentication
 //   - deeplinkTo: Optional pointer to a string specifying the target destination
+//   - opts: Optional IframeOption values, e.g. WithPlacementID(123). v4+ only.
 //
 // Returns:
-//   - string: The generated iframe URL with authentication and optional deeplink parameters
+//   - string: The generated iframe URL with authentication and optional deeplink/placement parameters
 //   - error: An error if invalid arguments are provided
-func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string) (string, error) {
+func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string, opts ...IframeOption) (string, error) {
 	var token string
 
 	switch v := authSignOrToken.(type) {
@@ -123,9 +138,20 @@ func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string)
 		return "", fmt.Errorf("invalid deeplinkTo argument: must be a non-empty string or nil")
 	}
 
+	options := &iframeOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if err := sdk.validateIframeOptions(options); err != nil {
+		return "", err
+	}
+
 	iframeUrl := fmt.Sprintf("%s?token=%s", sdk.config.ResolveIFrameBaseURL(), url.QueryEscape(token))
 	if deeplinkTo != nil {
 		iframeUrl += fmt.Sprintf("&to=%s", url.QueryEscape(*deeplinkTo))
+	}
+	if options.placementID != nil {
+		iframeUrl += fmt.Sprintf("&placementId=%d", *options.placementID)
 	}
 
 	return iframeUrl, nil
@@ -138,6 +164,7 @@ func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string)
 // Parameters:
 //   - authSignOrToken: Can be either an *AuthenticationSign or a string token
 //   - name: Optional pointer to a string for naming the widget. If provided, must be non-empty
+//   - opts: Optional IframeOption values, e.g. WithPlacementID(123). v4+ only.
 //
 // Returns:
 //   - string: The generated iframe URL
@@ -146,7 +173,8 @@ func (sdk *TyrAdsSdk) IframeUrl(authSignOrToken interface{}, deeplinkTo *string)
 // The function will return an error if:
 //   - authSignOrToken is neither an AuthenticationSign nor a string
 //   - name pointer is provided but points to an empty string
-func (sdk *TyrAdsSdk) IframePremiumWidget(authSignOrToken interface{}, name *string) (string, error) {
+//   - WithPlacementID is supplied with a non-positive value or on a v3 SDK
+func (sdk *TyrAdsSdk) IframePremiumWidget(authSignOrToken interface{}, name *string, opts ...IframeOption) (string, error) {
 	var token string
 
 	switch v := authSignOrToken.(type) {
@@ -162,10 +190,34 @@ func (sdk *TyrAdsSdk) IframePremiumWidget(authSignOrToken interface{}, name *str
 		return "", fmt.Errorf("invalid name argument: must be a non-empty string or nil")
 	}
 
+	options := &iframeOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+	if err := sdk.validateIframeOptions(options); err != nil {
+		return "", err
+	}
+
 	iframeUrl := fmt.Sprintf("%s/widget?token=%s", sdk.config.ResolveIFrameBaseURL(), url.QueryEscape(token))
 	if name != nil {
 		iframeUrl += fmt.Sprintf("&name=%s", url.QueryEscape(*name))
 	}
+	if options.placementID != nil {
+		iframeUrl += fmt.Sprintf("&placementId=%d", *options.placementID)
+	}
 
 	return iframeUrl, nil
+}
+
+func (sdk *TyrAdsSdk) validateIframeOptions(o *iframeOptions) error {
+	if o.placementID == nil {
+		return nil
+	}
+	if *o.placementID <= 0 {
+		return fmt.Errorf("invalid placementId argument: must be a positive integer")
+	}
+	if !config.IsV4OrAbove(sdk.config.SdkApiVersion) {
+		return fmt.Errorf("placementId is only supported on iframe v4 and above")
+	}
+	return nil
 }

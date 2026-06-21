@@ -35,6 +35,7 @@ type AuthenticationRequest struct {
 	MediaCreativeName *string     `json:"mediaCreativeName,omitempty"`
 	MediaCreativeID   *string     `json:"mediaCreativeId,omitempty"`
 	MediaCampaignName *string     `json:"mediaCampaignName,omitempty"`
+	EngagementID      *int        `json:"engagementId,omitempty"`
 }
 
 type AuthenticationRequestOptions func(*AuthenticationRequest)
@@ -148,6 +149,12 @@ func WithMediaCampaignName(v string) AuthenticationRequestOptions {
 	return func(ar *AuthenticationRequest) { ar.MediaCampaignName = &v }
 }
 
+// WithEngagementID sets the EngagementID field on an AuthenticationRequest.
+// It attributes the session to a specific publisher engagement on the backend.
+func WithEngagementID(v int) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.EngagementID = &v }
+}
+
 // ValidateAuthenticationRequest validates an AuthenticationRequest.
 // Returns error if validation fails.
 func (ar *AuthenticationRequest) ValidateAuthenticationRequest() error {
@@ -194,6 +201,9 @@ func (ar *AuthenticationRequest) ValidateAuthenticationRequest() error {
 	}
 	if err := validateUserGroup(ar.UserGroup); err != nil {
 		return err
+	}
+	if ar.EngagementID != nil && *ar.EngagementID <= 0 {
+		return errors.New("engagementId must be a positive integer")
 	}
 	return nil
 }
@@ -259,6 +269,7 @@ func (ar *AuthenticationRequest) GetParsedAuthenticationRequestData() map[string
 		"mediaCreativeName": ar.MediaCreativeName,
 		"mediaCreativeId":   ar.MediaCreativeID,
 		"mediaCampaignName": ar.MediaCampaignName,
+		"engagementId":      ar.EngagementID,
 	}
 	for key, value := range optionalFields {
 		switch v := value.(type) {

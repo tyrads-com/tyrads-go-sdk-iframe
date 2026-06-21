@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -54,4 +55,20 @@ func iframeBaseURLForVersion(version string) string {
 		major = "v4"
 	}
 	return fmt.Sprintf("https://%s.sdk.tyrads.com", major)
+}
+
+// IsV4OrAbove reports whether the given SDK API version string is v4 or later.
+// Unrecognized version strings (empty, non-numeric) are treated as the latest
+// supported version and return true.
+func IsV4OrAbove(version string) bool {
+	major := strings.TrimPrefix(strings.SplitN(version, ".", 2)[0], "v")
+	major = strings.TrimPrefix(major, "V")
+	if major == "" {
+		return true
+	}
+	n, err := strconv.Atoi(major)
+	if err != nil {
+		return true
+	}
+	return n >= 4
 }
