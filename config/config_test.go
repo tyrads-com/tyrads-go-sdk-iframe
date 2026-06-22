@@ -15,9 +15,9 @@ func TestNewConfig(t *testing.T) {
 			apiKey:    "test-key",
 			apiSecret: "test-secret",
 			expected: &Config{
-				IFrameBaseURL: "https://sdk.tyrads.com",
+				IFrameBaseURL: "",
 				SdkApiBaseURL: "https://api.tyrads.com",
-				SdkApiVersion: "v3.0",
+				SdkApiVersion: "v4.0",
 				SdkPlatform:   "Web",
 				ApiKey:        "test-key",
 				ApiSecret:     "test-secret",
@@ -32,9 +32,9 @@ func TestNewConfig(t *testing.T) {
 				func(c *Config) { c.Language = "es" },
 			},
 			expected: &Config{
-				IFrameBaseURL: "https://sdk.tyrads.com",
+				IFrameBaseURL: "",
 				SdkApiBaseURL: "https://api.tyrads.com",
-				SdkApiVersion: "v3.0",
+				SdkApiVersion: "v4.0",
 				SdkPlatform:   "Web",
 				ApiKey:        "test-key",
 				ApiSecret:     "test-secret",
@@ -50,6 +50,23 @@ func TestNewConfig(t *testing.T) {
 			},
 			expected: &Config{
 				IFrameBaseURL: "https://custom.domain.com",
+				SdkApiBaseURL: "https://api.tyrads.com",
+				SdkApiVersion: "v4.0",
+				SdkPlatform:   "Web",
+				ApiKey:        "test-key",
+				ApiSecret:     "test-secret",
+				Language:      "en",
+			},
+		},
+		{
+			name:      "with overridden api version",
+			apiKey:    "test-key",
+			apiSecret: "test-secret",
+			opts: []ConfigOptions{
+				func(c *Config) { c.SdkApiVersion = "v3.0" },
+			},
+			expected: &Config{
+				IFrameBaseURL: "",
 				SdkApiBaseURL: "https://api.tyrads.com",
 				SdkApiVersion: "v3.0",
 				SdkPlatform:   "Web",
@@ -84,6 +101,79 @@ func TestNewConfig(t *testing.T) {
 			}
 			if config.Language != tt.expected.Language {
 				t.Errorf("expected Language %s, got %s", tt.expected.Language, config.Language)
+			}
+		})
+	}
+}
+
+func TestIsV4OrAbove(t *testing.T) {
+	cases := []struct {
+		version string
+		want    bool
+	}{
+		{"v1.0", false},
+		{"v2.0", false},
+		{"v3.0", false},
+		{"v3.9", false},
+		{"v4.0", true},
+		{"v4.2", true},
+		{"v5.0", true},
+		{"v10.0", true},
+		{"V4.0", true},
+		{"V3.0", false},
+		{"4.0", true},
+		{"3.0", false},
+		{"", true},
+		{"latest", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.version, func(t *testing.T) {
+			got := IsV4OrAbove(tc.version)
+			if got != tc.want {
+				t.Errorf("IsV4OrAbove(%q) = %v, want %v", tc.version, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestResolveIFrameBaseURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *Config
+		expected string
+	}{
+		{
+			name:     "default v4 resolves to versioned subdomain",
+			config:   &Config{SdkApiVersion: "v4.0"},
+			expected: "https://v4.sdk.tyrads.com",
+		},
+		{
+			name:     "v3 resolves to legacy host",
+			config:   &Config{SdkApiVersion: "v3.0"},
+			expected: "https://sdk.tyrads.com",
+		},
+		{
+			name:     "future v5 resolves to versioned subdomain",
+			config:   &Config{SdkApiVersion: "v5.0"},
+			expected: "https://v5.sdk.tyrads.com",
+		},
+		{
+			name:     "explicit override wins over version derivation",
+			config:   &Config{SdkApiVersion: "v4.0", IFrameBaseURL: "https://custom.domain.com"},
+			expected: "https://custom.domain.com",
+		},
+		{
+			name:     "empty version falls back to v4 host",
+			config:   &Config{SdkApiVersion: ""},
+			expected: "https://v4.sdk.tyrads.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.config.ResolveIFrameBaseURL()
+			if got != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, got)
 			}
 		})
 	}

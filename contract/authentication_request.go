@@ -1,33 +1,41 @@
 package contract
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
+)
+
+const (
+	maxOptionalStringLength  = 255
+	maxUserGroupStringLength = 4096
 )
 
 // AuthenticationRequest represents a request for user authentication.
 type AuthenticationRequest struct {
-	PublisherUserID   string  `json:"publisherUserId"`
-	Age               *int    `json:"age,omitempty"`
-	Gender            *int    `json:"gender,omitempty"`
-	Email             *string `json:"email,omitempty"`
-	PhoneNumber       *string `json:"phoneNumber,omitempty"`
-	Sub1              *string `json:"sub1,omitempty"`
-	Sub2              *string `json:"sub2,omitempty"`
-	Sub3              *string `json:"sub3,omitempty"`
-	Sub4              *string `json:"sub4,omitempty"`
-	Sub5              *string `json:"sub5,omitempty"`
-	UserGroup         *string `json:"userGroup,omitempty"`
-	MediaSourceName   *string `json:"mediaSourceName,omitempty"`
-	MediaSourceID     *string `json:"mediaSourceId,omitempty"`
-	MediaSubSourceID  *string `json:"mediaSubSourceId,omitempty"`
-	Incentivized      *bool   `json:"incentivized,omitempty"`
-	MediaAdsetName    *string `json:"mediaAdsetName,omitempty"`
-	MediaAdsetID      *string `json:"mediaAdsetId,omitempty"`
-	MediaCreativeName *string `json:"mediaCreativeName,omitempty"`
-	MediaCreativeID   *string `json:"mediaCreativeId,omitempty"`
-	MediaCampaignName *string `json:"mediaCampaignName,omitempty"`
+	PublisherUserID   string      `json:"publisherUserId"`
+	Age               *int        `json:"age,omitempty"`
+	Gender            *int        `json:"gender,omitempty"`
+	Email             *string     `json:"email,omitempty"`
+	PhoneNumber       *string     `json:"phoneNumber,omitempty"`
+	Sub1              *string     `json:"sub1,omitempty"`
+	Sub2              *string     `json:"sub2,omitempty"`
+	Sub3              *string     `json:"sub3,omitempty"`
+	Sub4              *string     `json:"sub4,omitempty"`
+	Sub5              *string     `json:"sub5,omitempty"`
+	UserGroup         interface{} `json:"userGroup,omitempty"`
+	MediaSourceName   *string     `json:"mediaSourceName,omitempty"`
+	MediaSourceID     *string     `json:"mediaSourceId,omitempty"`
+	MediaSubSourceID  *string     `json:"mediaSubSourceId,omitempty"`
+	Incentivized      *bool       `json:"incentivized,omitempty"`
+	MediaAdsetName    *string     `json:"mediaAdsetName,omitempty"`
+	MediaAdsetID      *string     `json:"mediaAdsetId,omitempty"`
+	MediaCreativeName *string     `json:"mediaCreativeName,omitempty"`
+	MediaCreativeID   *string     `json:"mediaCreativeId,omitempty"`
+	MediaCampaignName *string     `json:"mediaCampaignName,omitempty"`
+	EngagementID      *int        `json:"engagementId,omitempty"`
 }
 
 type AuthenticationRequestOptions func(*AuthenticationRequest)
@@ -43,6 +51,108 @@ func NewAuthenticationRequest(publisherUserID string, opts ...AuthenticationRequ
 	}
 
 	return req
+}
+
+// WithAge sets the Age field on an AuthenticationRequest.
+func WithAge(v int) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Age = &v }
+}
+
+// WithGender sets the Gender field on an AuthenticationRequest.
+func WithGender(v int) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Gender = &v }
+}
+
+// WithEmail sets the Email field on an AuthenticationRequest.
+func WithEmail(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Email = &v }
+}
+
+// WithPhoneNumber sets the PhoneNumber field on an AuthenticationRequest.
+func WithPhoneNumber(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.PhoneNumber = &v }
+}
+
+// WithSub1 sets the Sub1 tracking field on an AuthenticationRequest.
+func WithSub1(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Sub1 = &v }
+}
+
+// WithSub2 sets the Sub2 tracking field on an AuthenticationRequest.
+func WithSub2(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Sub2 = &v }
+}
+
+// WithSub3 sets the Sub3 tracking field on an AuthenticationRequest.
+func WithSub3(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Sub3 = &v }
+}
+
+// WithSub4 sets the Sub4 tracking field on an AuthenticationRequest.
+func WithSub4(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Sub4 = &v }
+}
+
+// WithSub5 sets the Sub5 tracking field on an AuthenticationRequest.
+func WithSub5(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Sub5 = &v }
+}
+
+// WithUserGroup sets the UserGroup field. The value can be a string (sent as-is)
+// or a struct/map (JSON-encoded to a string before being sent to the backend).
+func WithUserGroup(v interface{}) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.UserGroup = v }
+}
+
+// WithMediaSourceName sets the MediaSourceName field on an AuthenticationRequest.
+func WithMediaSourceName(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaSourceName = &v }
+}
+
+// WithMediaSourceID sets the MediaSourceID field on an AuthenticationRequest.
+func WithMediaSourceID(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaSourceID = &v }
+}
+
+// WithMediaSubSourceID sets the MediaSubSourceID field on an AuthenticationRequest.
+func WithMediaSubSourceID(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaSubSourceID = &v }
+}
+
+// WithIncentivized sets the Incentivized field on an AuthenticationRequest.
+func WithIncentivized(v bool) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.Incentivized = &v }
+}
+
+// WithMediaAdsetName sets the MediaAdsetName field on an AuthenticationRequest.
+func WithMediaAdsetName(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaAdsetName = &v }
+}
+
+// WithMediaAdsetID sets the MediaAdsetID field on an AuthenticationRequest.
+func WithMediaAdsetID(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaAdsetID = &v }
+}
+
+// WithMediaCreativeName sets the MediaCreativeName field on an AuthenticationRequest.
+func WithMediaCreativeName(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaCreativeName = &v }
+}
+
+// WithMediaCreativeID sets the MediaCreativeID field on an AuthenticationRequest.
+func WithMediaCreativeID(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaCreativeID = &v }
+}
+
+// WithMediaCampaignName sets the MediaCampaignName field on an AuthenticationRequest.
+func WithMediaCampaignName(v string) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.MediaCampaignName = &v }
+}
+
+// WithEngagementID sets the EngagementID field on an AuthenticationRequest.
+// It attributes the session to a specific publisher engagement on the backend.
+func WithEngagementID(v int) AuthenticationRequestOptions {
+	return func(ar *AuthenticationRequest) { ar.EngagementID = &v }
 }
 
 // ValidateAuthenticationRequest validates an AuthenticationRequest.
@@ -75,7 +185,6 @@ func (ar *AuthenticationRequest) ValidateAuthenticationRequest() error {
 		"sub3":              ar.Sub3,
 		"sub4":              ar.Sub4,
 		"sub5":              ar.Sub5,
-		"userGroup":         ar.UserGroup,
 		"mediaSourceName":   ar.MediaSourceName,
 		"mediaSourceId":     ar.MediaSourceID,
 		"mediaSubSourceId":  ar.MediaSubSourceID,
@@ -86,14 +195,53 @@ func (ar *AuthenticationRequest) ValidateAuthenticationRequest() error {
 		"mediaCampaignName": ar.MediaCampaignName,
 	}
 	for field, value := range stringFields {
-		if value != nil && fmt.Sprintf("%T", value) != "*string" {
-			return fmt.Errorf("%s must be a string", field)
+		if value != nil && len(*value) > maxOptionalStringLength {
+			return fmt.Errorf("%s must not exceed %d characters", field, maxOptionalStringLength)
 		}
 	}
-	if ar.Incentivized != nil && fmt.Sprintf("%T", ar.Incentivized) != "*bool" {
-		return errors.New("incentivized must be a boolean")
+	if err := validateUserGroup(ar.UserGroup); err != nil {
+		return err
+	}
+	if ar.EngagementID != nil && *ar.EngagementID <= 0 {
+		return errors.New("engagementId must be a positive integer")
 	}
 	return nil
+}
+
+// validateUserGroup checks that userGroup is either a string, a struct,
+// or a map. Primitives (int, bool, float), slices, channels, and functions
+// are rejected. nil is treated as "not set".
+func validateUserGroup(v interface{}) error {
+	if v == nil {
+		return nil
+	}
+	if s, ok := v.(string); ok {
+		if len(s) > maxUserGroupStringLength {
+			return fmt.Errorf("userGroup must not exceed %d characters", maxUserGroupStringLength)
+		}
+		return nil
+	}
+	rv := reflect.ValueOf(v)
+	for rv.Kind() == reflect.Ptr || rv.Kind() == reflect.Interface {
+		if rv.IsNil() {
+			return nil
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Map, reflect.Struct:
+		// json.Marshal will handle these as JSON objects.
+		b, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Errorf("userGroup could not be JSON-encoded: %w", err)
+		}
+		if len(b) > maxUserGroupStringLength {
+			return fmt.Errorf("userGroup must not exceed %d characters when JSON-encoded", maxUserGroupStringLength)
+		}
+		return nil
+	default:
+		return fmt.Errorf("userGroup must be a string, struct, or map, got %s", rv.Kind())
+	}
 }
 
 // GetParsedAuthenticationRequestData returns a map containing the authentication request data.
@@ -112,7 +260,6 @@ func (ar *AuthenticationRequest) GetParsedAuthenticationRequestData() map[string
 		"sub3":              ar.Sub3,
 		"sub4":              ar.Sub4,
 		"sub5":              ar.Sub5,
-		"userGroup":         ar.UserGroup,
 		"mediaSourceName":   ar.MediaSourceName,
 		"mediaSourceId":     ar.MediaSourceID,
 		"mediaSubSourceId":  ar.MediaSubSourceID,
@@ -122,6 +269,7 @@ func (ar *AuthenticationRequest) GetParsedAuthenticationRequestData() map[string
 		"mediaCreativeName": ar.MediaCreativeName,
 		"mediaCreativeId":   ar.MediaCreativeID,
 		"mediaCampaignName": ar.MediaCampaignName,
+		"engagementId":      ar.EngagementID,
 	}
 	for key, value := range optionalFields {
 		switch v := value.(type) {
@@ -139,5 +287,28 @@ func (ar *AuthenticationRequest) GetParsedAuthenticationRequestData() map[string
 			}
 		}
 	}
+	if encoded, ok := encodeUserGroup(ar.UserGroup); ok {
+		data["userGroup"] = encoded
+	}
 	return data
+}
+
+// encodeUserGroup returns the wire form of userGroup. Strings are passed
+// through as-is; structs and maps are JSON-encoded to a string. Returns
+// ok=false to indicate the field should be omitted (nil or empty string).
+func encodeUserGroup(v interface{}) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+	if s, ok := v.(string); ok {
+		if s == "" {
+			return "", false
+		}
+		return s, true
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", false
+	}
+	return string(b), true
 }

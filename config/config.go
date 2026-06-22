@@ -1,5 +1,11 @@
 package config
 
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
 type Config struct {
 	IFrameBaseURL string
 	SdkApiBaseURL string
@@ -14,9 +20,9 @@ type ConfigOptions func(*Config)
 
 func NewConfig(apiKey, apiSecret string, opts ...ConfigOptions) *Config {
 	c := new(Config)
-	c.IFrameBaseURL = "https://sdk.tyrads.com"
+	c.IFrameBaseURL = ""
 	c.SdkApiBaseURL = "https://api.tyrads.com"
-	c.SdkApiVersion = "v3.0"
+	c.SdkApiVersion = "v4.0"
 	c.SdkPlatform = "Web"
 	c.ApiKey = apiKey
 	c.ApiSecret = apiSecret
@@ -27,4 +33,42 @@ func NewConfig(apiKey, apiSecret string, opts ...ConfigOptions) *Config {
 	}
 
 	return c
+}
+
+// ResolveIFrameBaseURL returns the iframe host to use for the current configuration.
+// If IFrameBaseURL is explicitly set, it is returned as-is. Otherwise the host is
+// derived from SdkApiVersion: v3.x uses the legacy sdk.tyrads.com host, and v4+
+// uses the versioned subdomain (v4.sdk.tyrads.com, v5.sdk.tyrads.com, ...).
+func (c *Config) ResolveIFrameBaseURL() string {
+	if c.IFrameBaseURL != "" {
+		return c.IFrameBaseURL
+	}
+	return iframeBaseURLForVersion(c.SdkApiVersion)
+}
+
+func iframeBaseURLForVersion(version string) string {
+	major := strings.SplitN(version, ".", 2)[0]
+	if major == "v3" {
+		return "https://sdk.tyrads.com"
+	}
+	if major == "" {
+		major = "v4"
+	}
+	return fmt.Sprintf("https://%s.sdk.tyrads.com", major)
+}
+
+// IsV4OrAbove reports whether the given SDK API version string is v4 or later.
+// Unrecognized version strings (empty, non-numeric) are treated as the latest
+// supported version and return true.
+func IsV4OrAbove(version string) bool {
+	major := strings.TrimPrefix(strings.SplitN(version, ".", 2)[0], "v")
+	major = strings.TrimPrefix(major, "V")
+	if major == "" {
+		return true
+	}
+	n, err := strconv.Atoi(major)
+	if err != nil {
+		return true
+	}
+	return n >= 4
 }

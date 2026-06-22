@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.21, 1.22]
+        go-version: ['1.22', '1.23', '1.24', '1.25']
     
     steps:
     - name: Check out code
@@ -67,7 +67,7 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Display coverage report
-      if: matrix.go-version == '1.22'
+      if: matrix.go-version == '1.25'
       run: |
         echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
         echo "Coverage by package:" >> $GITHUB_STEP_SUMMARY
@@ -80,7 +80,7 @@ jobs:
         echo "**Total Coverage: $TOTAL_COVERAGE**" >> $GITHUB_STEP_SUMMARY
 
     - name: Check coverage threshold
-      if: matrix.go-version == '1.22'
+      if: matrix.go-version == '1.25'
       run: |
         TOTAL_COVERAGE=$(go tool cover -func=coverage.out | tail -n 1 | awk '{print $3}' | sed 's/%//')
         echo "Total coverage: $TOTAL_COVERAGE%"
@@ -92,7 +92,7 @@ jobs:
         fi
 
     - name: Upload coverage artifacts
-      if: matrix.go-version == '1.22'
+      if: matrix.go-version == '1.25'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
